@@ -2,7 +2,7 @@ use axum::{
     debug_handler,
     extract::{Query, State},
     http::StatusCode,
-    response::{IntoResponse, Redirect},
+    response::IntoResponse,
     routing::get,
     Json, Router,
 };
