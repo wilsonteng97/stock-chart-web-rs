@@ -22,6 +22,8 @@ name = "apple-stock-chart"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "serde",
+ "serde_json",
  "time",
  "tokio",
  "yahoo_finance_api",
@@ -1648,8 +1650,7 @@ dependencies = [
 [[package]]
 name = "yahoo_finance_api"
 version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "debcb21aac136226bdaff6ac668d4c2442e80ab0c5a7393b283a55277b972aac"
+source = "git+https://github.com/meuter/yahoo_finance_api#e27ffcda61ce4be381c358eaa388605342d589ef"
 dependencies = [
  "reqwest",
  "select",
