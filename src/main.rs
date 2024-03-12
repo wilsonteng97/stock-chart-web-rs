@@ -2,14 +2,23 @@ use axum::{
     debug_handler,
     extract::{Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
     routing::get,
     Json, Router,
 };
+
+#[cfg(not(debug_assertions))]
+use axum_embed::ServeEmbed;
+
+#[cfg(not(debug_assertions))]
+use rust_embed::RustEmbed;
+
 use serde::Deserialize;
 use serde_json::json;
 use std::{error::Error, sync::Arc};
 use tokio::sync::Mutex;
+#[cfg(debug_assertions)]
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use yahoo_finance_api::{Quote, YahooConnector, YahooError};
 
@@ -21,6 +30,11 @@ struct QuoteApiQueryParameters {
     pub interval: Option<String>,
     pub period: Option<String>,
 }
+
+#[cfg(not(debug_assertions))]
+#[derive(RustEmbed, Clone)]
+#[folder = "assets"]
+struct Assets;
 
 async fn get_quotes(
     yahoo: &YahooConnector,
@@ -69,19 +83,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     tracing_subscriber::fmt().with_max_level(debug_level).init();
 
+    #[cfg(debug_assertions)]
+    let assets = ServeDir::new("assets");
+
+    #[cfg(not(debug_assertions))]
+    let assets = ServeEmbed::<Assets>::new();
+
     let yahoo = YahooConnector::new();
     let yahoo = Arc::new(Mutex::new(yahoo));
     let app = Router::new()
         .route("/api/v1/quotes", get(landing_page_handler))
+        .nest_service("/", assets)
         .layer(TraceLayer::new_for_http())
         .with_state(yahoo);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     println!("Listening on http://{}", listener.local_addr()?);
-    println!(
-        "Try http://{}/api/v1/quotes?ticker=AAPL",
-        listener.local_addr()?
-    );
     axum::serve(listener, app).await?;
 
     Ok(())
