@@ -2,9 +2,42 @@
     text-align: center;
 }
 
+#periods {
+    position: relative;
+    margin: auto;
+    max-width: 200px;
+    text-align: center;
+}
+
+
 #chart-container {
     position: relative;
     margin: auto;
     max-width: 1024px;
     padding: 10px;
+}
+
+a,
+a:link,
+a:hover,
+a:focus,
+a:active,
+a:visited {
+    color: #425d87;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+a:visited {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:active {
+    text-decoration: underline;
 }
