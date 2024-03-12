@@ -1,11 +1,18 @@
 (async () => {
-    const response = await fetch("/api/v1/quotes?ticker=AAPL");
+
+    // TODO: pick this from the list
+    const ticker = "NVDA";
+    const stock_name = "Nvidia Corp."
+
+    // TODO: currency should be returned in the quotes
+    const currency = "$";
+
+    const response = await fetch("/api/v1/quotes?ticker=" + ticker);
     const quotes = await response.json()
     const timestamps = quotes.map((quote) => new Date(quote.timestamp * 1000))
     const stock_prices = quotes.map((quote) => quote.close)
 
-    const ticker = document.getElementById("ticker")
-    ticker.textContent = "AAPL"
+    document.getElementById("ticker").textContent = stock_name
 
     new Chart("chart", {
         type: "line",
@@ -40,7 +47,7 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return "$" + context.formattedValue
+                            return currency + context.formattedValue
                         },
                         title: function(context) {
                             return moment(new Date(context[0].label)).format("ddd MMM YYYY")
@@ -65,7 +72,7 @@
                 y: {
                     ticks: {
                         callback: function(value) {
-                            return '$' + this.getLabelForValue(value)
+                            return currency + this.getLabelForValue(value)
                         }
                     }
                 }
