@@ -50,6 +50,11 @@
             }]
         },
         options: {
+
+            animation: {
+                duration: 100,
+            },
+
             responsive: true,
             interaction: {
                 mode: 'index',
