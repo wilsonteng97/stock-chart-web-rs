@@ -51,7 +51,7 @@ async fn get_quotes(
 }
 
 #[debug_handler]
-async fn landing_page_handler(
+async fn api_handler(
     State(state): State<AppState>,
     Query(QuoteApiQueryParameters {
         ticker,
@@ -97,7 +97,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let yahoo = YahooConnector::new();
     let yahoo = Arc::new(Mutex::new(yahoo));
     let app = Router::new()
-        .route("/api/v1/quotes", get(landing_page_handler))
+        .route("/api/v1/quotes", get(api_handler))
         .nest_service("/", assets)
         .layer(LiveReloadLayer::new())
         .layer(TraceLayer::new_for_http())
