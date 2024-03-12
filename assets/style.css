@@ -1,0 +1,10 @@
+#ticker {
+    text-align: center;
+}
+
+#chart-container {
+    position: relative;
+    margin: auto;
+    max-width: 1024px;
+    padding: 10px;
+}

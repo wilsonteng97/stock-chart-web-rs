@@ -1,24 +1,74 @@
-(function() {
+(async () => {
+    const response = await fetch("/api/v1/quotes?ticker=AAPL");
+    const quotes = await response.json()
+    const timestamps = quotes.map((quote) => new Date(quote.timestamp * 1000))
+    const stock_prices = quotes.map((quote) => quote.close)
 
-    const xValues = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
-    const yValues = [7, 8, 8, 9, 9, 9, 10, 11, 14, 14, 15];
+    const ticker = document.getElementById("ticker")
+    ticker.textContent = "AAPL"
 
     new Chart("chart", {
         type: "line",
         data: {
-            labels: xValues,
+            labels: timestamps,
             datasets: [{
-                fill: false,
-                lineTension: 0,
-                backgroundColor: "rgba(0,0,255,1.0)",
-                borderColor: "rgba(0,0,255,0.1)",
-                data: yValues
+                data: stock_prices,
+                fill: true,
+                backgroundColor: "rgba(165, 227, 155, 0.47)",
+                borderWidth: 1,
+                borderColor: "rgb(27, 102, 18)",
+                pointStyle: false,
+                tension: 0.1
             }]
         },
         options: {
-            legend: { display: false },
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                crosshair: {
+                    line: {
+                        color: "rgb(27, 102, 18)",
+                        width: 1
+                    },
+                },
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return "$" + context.formattedValue
+                        },
+                        title: function(context) {
+                            return moment(new Date(context[0].label)).format("ddd MMM YYYY")
+                        }
+                    }
+                }
+            },
+            x: {
+                type: "time",
+                time: {
+                    unit: 'month'
+                }
+            },
             scales: {
-                yAxes: [{ ticks: { min: 6, max: 16 } }],
+                x: {
+                    ticks: {
+                        callback: function(value) {
+                            return moment(this.getLabelForValue(value)).format("MMM YYYY")
+                        }
+                    }
+                },
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + this.getLabelForValue(value)
+                        }
+                    }
+                }
             }
         }
     });
