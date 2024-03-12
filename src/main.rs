@@ -1,26 +1,53 @@
 use axum::{
-    debug_handler, extract::State, http::StatusCode, response::IntoResponse, routing::get, Json,
-    Router,
+    debug_handler,
+    extract::{Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::get,
+    Json, Router,
 };
+use serde::Deserialize;
 use serde_json::json;
 use std::{error::Error, sync::Arc};
-use time::macros::datetime;
 use tokio::sync::Mutex;
+use tower_http::trace::TraceLayer;
 use yahoo_finance_api::{Quote, YahooConnector, YahooError};
 
 type AppState = Arc<Mutex<YahooConnector>>;
 
-async fn get_quotes(yahoo: &YahooConnector) -> Result<Vec<Quote>, YahooError> {
-    let start = datetime!(2020-1-1 0:00:00.00 UTC);
-    let end = datetime!(2020-1-31 23:59:59.99 UTC);
-    let resp = yahoo.get_quote_history("AAPL", start, end).await?;
+#[derive(Deserialize, Debug, Clone)]
+struct QuoteApiQueryParameters {
+    pub ticker: String,
+    pub interval: Option<String>,
+    pub period: Option<String>,
+}
+
+async fn get_quotes(
+    yahoo: &YahooConnector,
+    ticker: impl AsRef<str>,
+    interval: impl AsRef<str>,
+    period: impl AsRef<str>,
+) -> Result<Vec<Quote>, YahooError> {
+    let resp = yahoo
+        .get_quote_range(ticker.as_ref(), interval.as_ref(), period.as_ref())
+        .await?;
     resp.quotes()
 }
 
 #[debug_handler]
-async fn landing_page_handler(State(state): State<AppState>) -> impl IntoResponse {
+async fn landing_page_handler(
+    State(state): State<AppState>,
+    Query(QuoteApiQueryParameters {
+        ticker,
+        interval,
+        period,
+    }): Query<QuoteApiQueryParameters>,
+) -> impl IntoResponse {
     let yahoo = state.lock().await;
-    match get_quotes(&yahoo).await {
+    let interval = interval.unwrap_or("1d".into());
+    let period = period.unwrap_or("1y".into());
+
+    match get_quotes(&yahoo, ticker, interval, period).await {
         Ok(quotes) => {
             let status = StatusCode::OK;
             let payload = Json(quotes);
@@ -36,14 +63,25 @@ async fn landing_page_handler(State(state): State<AppState>) -> impl IntoRespons
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let debug_level = std::env::var("TRACE_LEVEL")
+        .unwrap_or("INFO".into())
+        .parse::<tracing::Level>()?;
+
+    tracing_subscriber::fmt().with_max_level(debug_level).init();
+
     let yahoo = YahooConnector::new();
     let yahoo = Arc::new(Mutex::new(yahoo));
     let app = Router::new()
-        .route("/", get(landing_page_handler))
+        .route("/api/v1/quotes", get(landing_page_handler))
+        .layer(TraceLayer::new_for_http())
         .with_state(yahoo);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     println!("Listening on http://{}", listener.local_addr()?);
+    println!(
+        "Try http://{}/api/v1/quotes?ticker=AAPL",
+        listener.local_addr()?
+    );
     axum::serve(listener, app).await?;
 
     Ok(())
