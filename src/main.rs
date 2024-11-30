@@ -94,7 +94,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let livereload = LiveReloadLayer::new();
     let reloader = livereload.reloader();
 
-    let yahoo = YahooConnector::new();
+    let yahoo = YahooConnector::new().expect("Valid YahooConnector");
     let yahoo = Arc::new(Mutex::new(yahoo));
     let app = Router::new()
         .route("/api/v1/quotes", get(api_handler))
